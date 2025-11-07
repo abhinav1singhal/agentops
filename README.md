@@ -2,7 +2,6 @@
 #Core Value: Reduces Mean Time To Recovery (MTTR) from minutes/hours to under 60 seconds by automating incident detection, decision-making, and remediation.
 
 
-
 ┌─────────────────┐
 │  Cloud Scheduler│ ──► Triggers health scans every 1-2 min
 └─────────────────┘
