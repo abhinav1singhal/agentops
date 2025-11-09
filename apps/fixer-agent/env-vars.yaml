@@ -1,0 +1,24 @@
+# Fixer Agent - Cloud Run Environment Variables Configuration
+# This file is used with: gcloud run deploy --env-vars-file env-vars.yaml
+
+# GCP Configuration
+PROJECT_ID: "agent-ops-2025"
+REGION: "us-central1"
+
+# Server Configuration
+PORT: "8081"
+
+# Operation Mode
+# Set to "true" for testing without making actual changes
+DRY_RUN_MODE: "false"
+
+# Firestore Collections
+INCIDENTS_COLLECTION: "incidents"
+ACTIONS_COLLECTION: "actions"
+
+# Safety Limits for Scaling Actions
+# These limits prevent excessive scaling that could increase costs
+MIN_INSTANCES_FLOOR: "0"      # Minimum allowed min_instances value
+MIN_INSTANCES_CEILING: "5"    # Maximum allowed min_instances value
+MAX_INSTANCES_FLOOR: "10"     # Minimum allowed max_instances value
+MAX_INSTANCES_CEILING: "100"  # Maximum allowed max_instances value
