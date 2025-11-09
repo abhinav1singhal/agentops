@@ -5,9 +5,6 @@
 PROJECT_ID: "agent-ops-2025"
 REGION: "us-central1"
 
-# Server Configuration
-PORT: "8081"
-
 # Operation Mode
 # Set to "true" for testing without making actual changes
 DRY_RUN_MODE: "false"
