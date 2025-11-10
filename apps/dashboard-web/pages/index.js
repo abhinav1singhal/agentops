@@ -5,6 +5,8 @@ import IncidentCard from '../components/IncidentCard';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import DarkModeToggle from '../components/DarkModeToggle';
+import IncidentDetailsModal from '../components/IncidentDetailsModal';
+import AnalyticsSection from '../components/AnalyticsSection';
 
 export default function Dashboard() {
   const [services, setServices] = useState([]);
@@ -13,6 +15,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [selectedIncident, setSelectedIncident] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const supervisorApiUrl = process.env.NEXT_PUBLIC_SUPERVISOR_API_URL || 'http://localhost:8080';
 
@@ -234,12 +237,32 @@ export default function Dashboard() {
                 <IncidentCard
                   key={incident.id || index}
                   incident={incident}
-                  onClick={() => setSelectedIncident(incident)}
+                  onClick={() => {
+                    setSelectedIncident(incident);
+                    setIsModalOpen(true);
+                  }}
                 />
               ))}
             </div>
           )}
         </div>
+
+        {/* Analytics Section */}
+        {incidents.length > 0 && (
+          <div className="mt-8">
+            <AnalyticsSection incidents={incidents} services={services} />
+          </div>
+        )}
+
+        {/* Incident Details Modal */}
+        <IncidentDetailsModal
+          incident={selectedIncident}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedIncident(null);
+          }}
+        />
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-600 dark:text-gray-400">
