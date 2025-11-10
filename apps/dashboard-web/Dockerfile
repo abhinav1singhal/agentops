@@ -16,8 +16,8 @@ RUN mkdir -p public
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build Next.js app
-RUN npm run build
+# Build Next.js app using npx to avoid permission issues
+RUN npx next build
 
 # Stage 3: Runner
 FROM node:18-slim AS runner
