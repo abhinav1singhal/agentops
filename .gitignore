@@ -1,0 +1,74 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+
+# Next.js
+.next/
+out/
+.vercel
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+env.ps1
+env-vars.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# GCP
+.gcloud/
+*.json
+!package.json
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+*.tgz
+deployment-urls.txt
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
