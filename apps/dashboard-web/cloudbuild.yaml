@@ -1,0 +1,17 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_SUPERVISOR_API_URL=https://supervisor-api-668107958735.us-central1.run.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_PROJECT_ID=agent-ops-2025'
+      - '-t'
+      - 'gcr.io/agent-ops-2025/dashboard-web:v1.0.1'
+      - '-t'
+      - 'gcr.io/agent-ops-2025/dashboard-web:latest'
+      - '.'
+images:
+  - 'gcr.io/agent-ops-2025/dashboard-web:v1.0.1'
+  - 'gcr.io/agent-ops-2025/dashboard-web:latest'
+timeout: 1200s
