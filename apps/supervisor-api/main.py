@@ -10,6 +10,8 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, List, Optional
+import httpx
+from google.cloud import run_v2
 
 from models import (
     HealthScanResponse,
@@ -289,6 +291,190 @@ async def generate_explanation(incident_id: str):
     except Exception as e:
         logger.error(f"Error generating explanation: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/fault/inject")
+async def inject_fault(
+    service_name: str,
+    fault_type: str = "5xx",
+    error_rate: float = 15.0,
+    latency_ms: int = 1000,
+    duration: int = 300
+):
+    """
+    Inject a fault into a target service for demo purposes
+    Proxies the request to the service's /fault/enable endpoint
+    """
+    try:
+        # Get service URL
+        service_url = await _get_service_url(service_name)
+
+        # Build parameters based on fault type
+        params = {
+            "type": fault_type,
+            "duration": duration
+        }
+
+        if fault_type in ["5xx", "timeout"]:
+            params["error_rate"] = error_rate
+
+        if fault_type == "latency":
+            params["latency_ms"] = latency_ms
+
+        # Make request to service
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{service_url}/fault/enable",
+                params=params
+            )
+            response.raise_for_status()
+
+        logger.info(f"Fault injected on {service_name}: {fault_type}, params: {params}")
+
+        return {
+            "success": True,
+            "service": service_name,
+            "fault_type": fault_type,
+            "configuration": params,
+            "message": f"Fault injection enabled on {service_name}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Failed to inject fault on {service_name}: {e}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"Service returned error: {e}")
+    except httpx.RequestError as e:
+        logger.error(f"Failed to reach {service_name}: {e}")
+        raise HTTPException(status_code=503, detail=f"Service unreachable: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error injecting fault: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/fault/disable")
+async def disable_fault(service_name: str):
+    """
+    Disable fault injection on a target service
+    Proxies the request to the service's /fault/disable endpoint
+    """
+    try:
+        # Get service URL
+        service_url = await _get_service_url(service_name)
+
+        # Make request to service
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(f"{service_url}/fault/disable")
+            response.raise_for_status()
+
+        logger.info(f"Fault disabled on {service_name}")
+
+        return {
+            "success": True,
+            "service": service_name,
+            "message": f"Fault injection disabled on {service_name}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Failed to disable fault on {service_name}: {e}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"Service returned error: {e}")
+    except httpx.RequestError as e:
+        logger.error(f"Failed to reach {service_name}: {e}")
+        raise HTTPException(status_code=503, detail=f"Service unreachable: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error disabling fault: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/fault/status")
+async def get_fault_status(service_name: Optional[str] = None):
+    """
+    Get fault injection status for one or all services
+    Proxies the request to the service's /fault/status endpoint
+    """
+    try:
+        if service_name:
+            # Get status for specific service
+            service_url = await _get_service_url(service_name)
+
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(f"{service_url}/fault/status")
+                response.raise_for_status()
+                status_data = response.json()
+
+            return {
+                "service": service_name,
+                "fault_status": status_data,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            # Get status for all monitored services
+            target_services = _get_target_services()
+            all_statuses = []
+
+            for service_config in target_services:
+                svc_name = service_config["name"]
+                try:
+                    service_url = await _get_service_url(svc_name)
+
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        response = await client.get(f"{service_url}/fault/status")
+                        response.raise_for_status()
+                        status_data = response.json()
+
+                    all_statuses.append({
+                        "service": svc_name,
+                        "fault_status": status_data
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to get fault status for {svc_name}: {e}")
+                    all_statuses.append({
+                        "service": svc_name,
+                        "fault_status": {"error": str(e)}
+                    })
+
+            return {
+                "services": all_statuses,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+
+    except Exception as e:
+        logger.error(f"Error getting fault status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _get_service_url(service_name: str) -> str:
+    """
+    Get the full HTTPS URL for a Cloud Run service
+    """
+    try:
+        project_id = os.getenv("PROJECT_ID")
+        region = os.getenv("REGION", "us-central1")
+
+        # Initialize Cloud Run client
+        client = run_v2.ServicesAsyncClient()
+
+        # Construct service path
+        service_path = f"projects/{project_id}/locations/{region}/services/{service_name}"
+
+        # Get service details
+        service = await client.get_service(name=service_path)
+
+        # Extract URL from service
+        service_url = service.uri
+
+        if not service_url:
+            raise ValueError(f"No URL found for service {service_name}")
+
+        logger.info(f"Resolved {service_name} to {service_url}")
+        return service_url
+
+    except Exception as e:
+        logger.error(f"Failed to get URL for service {service_name}: {e}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Service {service_name} not found or not accessible: {str(e)}"
+        )
 
 
 def _get_target_services() -> List[Dict]:
