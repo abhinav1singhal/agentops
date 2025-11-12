@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import MetricCard from '../components/MetricCard';
+import ServicesTable from '../components/ServicesTable';
 import IncidentCard from '../components/IncidentCard';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import DarkModeToggle from '../components/DarkModeToggle';
 import IncidentDetailsModal from '../components/IncidentDetailsModal';
 import AnalyticsSection from '../components/AnalyticsSection';
+import FaultInjectionPanel from '../components/FaultInjectionPanel';
 
 export default function Dashboard() {
   const [services, setServices] = useState([]);
@@ -192,6 +194,11 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Fault Injection Panel (Demo) */}
+        {!loading && services.length > 0 && (
+          <FaultInjectionPanel services={services} />
+        )}
+
         {/* Services Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Services</h2>
@@ -206,15 +213,7 @@ export default function Dashboard() {
               <p>Configure TARGET_SERVICES in supervisor-api environment variables</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service, index) => (
-                <MetricCard
-                  key={index}
-                  service={service}
-                  onClick={() => console.log('Service clicked:', service.name)}
-                />
-              ))}
-            </div>
+            <ServicesTable services={services} />
           )}
         </div>
 
